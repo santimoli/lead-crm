@@ -8,7 +8,10 @@ export function errorResponse(error) {
     for (const issue of error.issues) {
       if (issue.path[0]) fields[issue.path[0]] ??= issue.message;
     }
-    return NextResponse.json({ error: "Validation failed", fields }, { status: 400 });
+    return NextResponse.json(
+      { error: "Validation failed", fields },
+      { status: 400 },
+    );
   }
   if (error instanceof SyntaxError) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
@@ -17,7 +20,10 @@ export function errorResponse(error) {
     return NextResponse.json({ error: error.message }, { status: 404 });
   }
   if (error instanceof ConflictError) {
-    return NextResponse.json({ error: error.message, fields: error.fields }, { status: 409 });
+    return NextResponse.json(
+      { error: error.message, fields: error.fields },
+      { status: 409 },
+    );
   }
   console.error(error);
   return NextResponse.json({ error: "Internal server error" }, { status: 500 });
