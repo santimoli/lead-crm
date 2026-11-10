@@ -1,8 +1,10 @@
 # Lead CRM
 
-Um CRM pequeno para gerir leads comerciais. Permite criar, listar, editar e apagar leads, pesquisá-las por nome ou email e filtrá-las por estado.
+A small CRM to manage sales leads. You can create, list, edit and delete leads, search them by name or email and filter them by status.
 
-## Como correr localmente
+## Running locally
+
+You need Node.js 22 or later.
 
 ```bash
 git clone https://github.com/santimoli/lead-crm.git
@@ -13,47 +15,76 @@ npx prisma migrate dev
 npm run dev
 ```
 
-O `prisma migrate dev` cria a base de dados SQLite em `prisma/dev.db` e gera o cliente do Prisma. A aplicação fica em http://localhost:3000.
+`prisma migrate dev` creates the SQLite database in `prisma/dev.db` and generates the Prisma client. The app runs on http://localhost:3000.
 
-## Tecnologias
+## Features
 
-Escolhi o Next.js porque junta a interface e a API no mesmo projeto, e também porque queria aprender mais sobre ele.
+- Create, list, edit and delete leads.
+- Search by name or email, filter by status.
+- Paginated list, newest first.
+- Input validation with an error message for each field.
+- Emails are unique. A duplicate returns a clear error.
 
-Já tinha utilizado bastante React nos meus projetos académicos, por isso pude concentrar-me na estrutura da aplicação em vez de aprender uma biblioteca nova. Escolhi o SQLite para manter o projeto simples: a base de dados é um único ficheiro e não precisa de configuração.
+<!-- TODO: add the frontend features (dashboard, form, loading/empty/error states, toasts) -->
 
-Para aceder à base de dados escolhi o Prisma, que define o modelo num só ficheiro, gera as migrações e faz as queries sem escrever SQL. Para validar os dados recorri ao Zod, porque as regras ficam escritas de forma declarativa, parecida com as anotações do Bean Validation no Spring Boot. Por fim, o Sonner mostra notificações curtas depois de cada ação, como "Lead criada" ou "Erro ao apagar".
+## Limitations
 
-## Estrutura do projeto
+- No authentication. Anyone with access to the app can see and change every lead.
+- No automated tests. I tested the API by hand in Postman.
+- Search ignores case only for letters without accents, because of how SQLite compares text.
+- SQLite is fine for local use, but a deployed version would need a database server such as PostgreSQL.
+
+## Technical decisions
+
+I chose Next.js because the UI and the API live in one project, and because I wanted to learn more about it. I had already used React a lot in university projects, so I could focus on the structure of the app instead of a new library.
+
+The database is SQLite through Prisma. SQLite is a single file and needs no setup, so the project runs right after cloning. The trade-off is that it does not suit a production app with several servers. Prisma keeps the model in one file and generates the migrations. Moving to PostgreSQL would mean changing the `provider` in `schema.prisma` and the `DATABASE_URL`.
+
+Zod validates every request. The rules are declarative, similar to Bean Validation annotations in Spring Boot.
+
+Sonner shows short notifications after each action, such as "Lead created".
+
+The code is split in layers, like a controller and a service in Spring Boot. The route handlers only deal with HTTP. The service holds the rules and is the only code that talks to Prisma. When something fails, the service throws an error and `errorResponse` in `lib/http.js` picks the status code, so every route handles errors the same way. This adds a few files for a small app, but each one has a single job.
+
+Email uniqueness is enforced by the database, not by checking first and inserting after, which would let two requests with the same email both pass. Emails are trimmed and lowercased before they are saved.
+
+Status is stored as a `String`, because Prisma does not support enums on SQLite. Zod only accepts the four valid values.
+
+Ids are UUIDs, so they do not reveal how many leads exist.
+
+The list is paginated on the server. This needs an extra `count` query, but the page never loads every lead at once.
+
+<!-- TODO: add frontend decisions -->
+
+## Project structure
 
 ```
 prisma/
-  schema.prisma            Modelo Lead
-  migrations/              Histórico SQL da base de dados
+  schema.prisma            Lead model
+  migrations/              Database history
 src/
   app/api/leads/
-    route.js               GET (listar) e POST (criar)
-    [id]/route.js          PATCH (editar) e DELETE (apagar)
+    route.js               GET (list) and POST (create)
+    [id]/route.js          PATCH (update) and DELETE
   features/leads/
-    schema.js              Schemas Zod para criar, editar e listar
-    service.js             Regras de negócio e queries à base de dados
+    schema.js              Zod schemas
+    service.js             Business rules and database queries
   lib/
-    prisma.js              Cliente Prisma partilhado
-    errors.js              NotFoundError e ConflictError
-    http.js                Converte erros em respostas HTTP
+    prisma.js              Shared Prisma client
+    errors.js              NotFoundError and ConflictError
+    http.js                Turns errors into HTTP responses
 ```
 
-Cada pedido passa por três camadas. A rota trata do HTTP: lê o pedido, valida-o com o schema Zod e envia a resposta. O service tem as regras e é o único código que fala com o Prisma. Quando algo falha, o service lança uma exceção e o `errorResponse` em `lib/http.js` escolhe o código de resposta, por isso todas as rotas tratam os erros da mesma forma.
+<!-- TODO: add the frontend folders -->
 
 ## API
 
-- `GET /api/leads` lista as leads, das mais recentes para as mais antigas.
-- `POST /api/leads` cria uma lead e responde 201 com a lead criada.
-- `PATCH /api/leads/:id` altera um ou mais campos e devolve a lead atualizada.
-- `DELETE /api/leads/:id` apaga a lead e responde 204, sem corpo.
+- `GET /api/leads` lists leads, newest first.
+- `POST /api/leads` creates a lead and returns 201.
+- `PATCH /api/leads/:id` updates one or more fields.
+- `DELETE /api/leads/:id` deletes a lead and returns 204.
 
-A listagem aceita `search`, que procura parte do nome ou do email, e `status`, que pode ser `NEW`, `CONTACTED`, `QUALIFIED` ou `LOST`. A paginação faz-se com `page` e `pageSize`, que por defeito são 1 e 20. O `pageSize` vai até 100.
-
-A resposta da listagem tem esta forma:
+The list accepts `search`, `status` (`NEW`, `CONTACTED`, `QUALIFIED` or `LOST`), `page` (default 1) and `pageSize` (default 20, max 100). The response looks like this:
 
 ```json
 {
@@ -62,14 +93,10 @@ A resposta da listagem tem esta forma:
 }
 ```
 
-O `total` conta todas as leads que cumprem os filtros, e não só as da página atual. A interface vai utilizá-lo para calcular o número de páginas.
+`total` counts every lead that matches the filters, not only the current page.
 
-Os erros têm sempre a mesma forma: `{ "error": "mensagem", "fields": { "email": "mensagem" } }`. O `fields` só aparece quando há um campo concreto com problema.
+Errors return `{ "error": "message", "fields": { "email": "message" } }`, with 400 for invalid data, 404 for a missing lead and 409 for a duplicate email.
 
-## Decisões
+## Approach and tools
 
-O estado é guardado como texto (`String`), porque o Prisma não suporta enums em SQLite. Os valores permitidos estão definidos uma única vez no `schema.js`.
 
-Os ids são UUIDs. Não revelam quantas leads existem.
-
-A listagem é paginada e ordenada pela data de criação e depois pelo id, para que a ordem não mude entre páginas quando duas leads têm a mesma data.
