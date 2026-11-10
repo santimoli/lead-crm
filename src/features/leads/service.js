@@ -34,3 +34,7 @@ export async function listLeads({search,status, page, pageSize}) {
 
 
 export function createLead(data) {return prisma.lead.create({data}).catch(ErrorsPrisma);}
+
+export function updateLead(id,data) {return prisma.lead.update({where:{id},data}).catch(ErrorsPrisma);}
+
+export function deleteLead(id) {return prisma.lead.delete({where:{id}}).catch(ErrorsPrisma);}

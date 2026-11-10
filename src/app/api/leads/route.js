@@ -1,7 +1,7 @@
 import {NextResponse} from 'next/server'
 import {errorResponse} from "@/lib/http";
 import {createLead, listLeads} from "@/features/leads/service";
-import {createLeadSchema,listLeadsSchema} from "@/features/leads/schema";
+import {createLeadSchema, listLeadsSchema} from "@/features/leads/schema";
 
 export async function GET(request) {
     try{
