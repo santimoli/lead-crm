@@ -20,6 +20,7 @@ export default function Home() {
     const [statusFilter, setStatusFilter] = useState("");
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
+    const [stats, setStats] = useState(null);
 
     function handleChange(e) {
         setForm({ ...form, [e.target.name]: e.target.value });
@@ -54,13 +55,23 @@ export default function Home() {
             }
             cancelEdit();
             loadLeads();
+            loadStats();
         });
     }
     function handleDelete(id) {
         if (!confirm("Delete this lead?")) return;
         fetch(`/api/leads/${id}`, { method: "DELETE" }).then((response) => {
-            if (response.ok) loadLeads();
+            if (response.ok) {
+                loadLeads();
+                loadStats();
+            }
         });
+    }
+
+    function loadStats() {
+        fetch("/api/leads/stats")
+            .then((response) => response.json())
+            .then((body) => setStats(body));
     }
 
     function loadLeads() {
@@ -88,12 +99,25 @@ export default function Home() {
         loadLeads();
     }, [search, statusFilter, page]);
 
+    useEffect(() => {
+        loadStats();
+    }, []);
+
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
     return (
     <div className={styles.page}>
       <main>
           <h1>Leads</h1>
+
+          {stats && (
+              <p>
+                  Total: {stats.total}
+                  {Object.entries(stats.byStatus).map(([status, count]) => (
+                      <span key={status}> | {status}: {count}</span>
+                  ))}
+              </p>
+          )}
           <form onSubmit={handleSubmit}>
               <input name="name" placeholder="Name" value={form.name} onChange={handleChange} />
               {fieldErrors.name && <p>{fieldErrors.name}</p>}
