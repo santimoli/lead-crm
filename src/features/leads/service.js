@@ -46,9 +46,14 @@ export function deleteLead(id) {
 }
 
 export async function getLeadStats() {
-  const [groups, total] = await prisma.$transaction([
+  const [groups, total, recent] = await prisma.$transaction([
     prisma.lead.groupBy({ by: ["status"], _count: { status: true } }),
     prisma.lead.count(),
+    prisma.lead.findMany({
+      orderBy: newFirst,
+      take: 5,
+      select: { id: true, name: true, createdAt: true },
+    }),
   ]);
 
   const byStatus = Object.fromEntries(
@@ -57,5 +62,5 @@ export async function getLeadStats() {
   for (const group of groups) {
     byStatus[group.status] = group._count.status;
   }
-  return { total, byStatus };
+  return { total, byStatus, recent };
 }

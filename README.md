@@ -45,6 +45,7 @@ not delete lead".
 - Criar, editar e apagar leads, com confirmação antes de apagar.
 - Barra lateral com os estados (New, Contacted, Qualified, Lost) e o número de
   leads em cada um. Clicar num estado filtra a lista.
+- Lista das 5 leads mais recentes na barra lateral, que não muda com os filtros.
 - Pesquisa por nome ou email.
 - Lista paginada, das mais recentes para as mais antigas, com a data de criação
   em formato relativo ("yesterday", "3 days ago").
@@ -134,7 +135,8 @@ src/
 - `POST /api/leads` cria uma lead e devolve 201.
 - `PATCH /api/leads/:id` altera um ou mais campos.
 - `DELETE /api/leads/:id` apaga uma lead e devolve 204.
-- `GET /api/leads/stats` devolve o total de leads e o número em cada estado.
+- `GET /api/leads/stats` devolve o total de leads, o número em cada estado e as
+  5 leads mais recentes.
 
 A listagem aceita search, status (NEW, CONTACTED, QUALIFIED ou LOST), page
 (por omissão 1) e pageSize (por omissão 10, no máximo 100). A resposta tem este
