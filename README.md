@@ -5,7 +5,7 @@ apagar leads, pesquisá-las por nome ou email e filtrá-las por estado.
 
 ## Como correr localmente
 
-É preciso ter o Node.js.
+É preciso ter o Node.js 20.9 ou mais recente.
 
 ```bash
 git clone https://github.com/santimoli/lead-crm.git
@@ -62,8 +62,6 @@ not delete lead".
 - A pesquisa ignora maiúsculas e minúsculas apenas em letras sem acentos, por
   causa da forma como o SQLite compara texto.
 - A pesquisa faz um pedido a cada letra escrita, sem debounce.
-- O SQLite serve para correr localmente, mas uma versão publicada precisaria de
-  uma base de dados como o PostgreSQL.
 - O estado é guardado como texto, porque o Prisma não suporta enums no SQLite. O
   Zod só aceita os quatro valores válidos.
 
@@ -71,8 +69,8 @@ not delete lead".
 
 Com o SQLite, o projeto corre logo depois de ser clonado. Em contrapartida, não
 serve para uma aplicação em produção com vários servidores. Mudar para
-PostgreSQL implicaria apenas alterar o provider no schema.prisma e o
-DATABASE_URL.
+PostgreSQL implicaria alterar o provider no schema.prisma e o DATABASE_URL e
+gerar as migrações de novo. O estado poderia então passar a ser um enum.
 
 O código está dividido em camadas, como um controller e um service no Spring
 Boot. As rotas tratam apenas de HTTP. O service contém as regras e é o único
@@ -101,7 +99,8 @@ facilita separar as leads novas, as já contactadas e as qualificadas.
 Os números de cada estado vêm de um endpoint próprio, /api/leads/stats, que os
 conta na base de dados. Não os calculo no browser porque a lista só traz as 10
 leads da página atual, já filtradas, e os totais ficariam errados. Assim, depois
-de criar, editar ou apagar uma lead, a página faz dois pedidos: um para a lista e
+de criar, editar ou apagar uma lead, a página faz dois pedidos: um para a lista
+e
 outro para os números. Podia juntar os números à resposta da lista e fazer só um
 pedido, mas preferi que cada endpoint fizesse uma coisa só.
 
@@ -138,7 +137,7 @@ src/
 - `GET /api/leads/stats` devolve o total de leads e o número em cada estado.
 
 A listagem aceita search, status (NEW, CONTACTED, QUALIFIED ou LOST), page
-(por omissão 1) e pageSize (por omissão 20, no máximo 100). A resposta tem este
+(por omissão 1) e pageSize (por omissão 10, no máximo 100). A resposta tem este
 formato:
 
 ```json
@@ -154,7 +153,7 @@ formato:
       "updatedAt": "…"
     }
   ],
-  "meta": { "total": 1, "page": 1, "pageSize": 20 }
+  "meta": { "total": 1, "page": 1, "pageSize": 10 }
 }
 ```
 
@@ -171,8 +170,7 @@ Comecei por listar os requisitos e planear as camadas. Fiz primeiro o backend: o
 modelo da base de dados, a validação, o service e as rotas da API, testando cada
 endpoint no Postman antes de avançar. Depois construí o frontend por passos
 pequenos (lista, criar, apagar, editar, pesquisa, paginação, estatísticas,
-notificações) e só no fim tratei do aspeto. Fiz um commit depois de cada passo
-que funcionava.
+notificações) e só no fim tratei do aspeto.
 
 Ferramentas: IntelliJ IDEA, Postman, Git e GitHub, Prettier e ESLint, e o Claude
 como assistente de IA.
