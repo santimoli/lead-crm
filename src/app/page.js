@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import styles from "./page.module.css";
 
 const emptyForm = { name: "", email: "", company: "", status: "NEW" };
@@ -51,8 +52,10 @@ export default function Home() {
             if (!response.ok) {
                 const body = await response.json();
                 setFieldErrors(body.fields ?? {});
+                toast.error(body.error);
                 return;
             }
+            toast.success(editingId ? "Lead updated" : "Lead created");
             cancelEdit();
             loadLeads();
             loadStats();
@@ -61,10 +64,13 @@ export default function Home() {
     function handleDelete(id) {
         if (!confirm("Delete this lead?")) return;
         fetch(`/api/leads/${id}`, { method: "DELETE" }).then((response) => {
-            if (response.ok) {
-                loadLeads();
-                loadStats();
+            if (!response.ok) {
+                toast.error("Could not delete lead");
+                return;
             }
+            toast.success("Lead deleted");
+            loadLeads();
+            loadStats();
         });
     }
 
