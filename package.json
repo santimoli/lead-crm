@@ -8,6 +8,9 @@
     "start": "next start",
     "lint": "eslint"
   },
+  "prisma": {
+    "seed": "node prisma/data.js"
+  },
   "dependencies": {
     "@prisma/client": "^6.19.3",
     "next": "16.4.5",
