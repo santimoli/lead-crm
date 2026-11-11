@@ -28,8 +28,6 @@ ficheiro prisma/data.js. A aplicação abre em http://localhost:3000.
 Escolhi o Next.js porque junta a interface e a API no mesmo projeto, e também
 porque queria aprender mais sobre ele.
 
-Já tinha utilizado bastante React nos meus projetos académicos, por isso pude
-concentrar-me na estrutura da aplicação em vez de aprender uma biblioteca nova.
 Escolhi o SQLite para manter o projeto simples: a base de dados é um único
 ficheiro e não precisa de configuração.
 
@@ -43,23 +41,25 @@ not delete lead".
 ## Funcionalidades
 
 - Criar, editar e apagar leads, com confirmação antes de apagar.
-- Barra lateral com os estados (New, Contacted, Qualified, Lost) e o número de
-  leads em cada um. Clicar num estado filtra a lista.
-- Lista das 5 leads mais recentes na barra lateral, que não muda com os filtros.
+- A barra lateral funciona como dashboard: total de leads, número em cada estado
+  (New, Contacted, Qualified, Lost) e as 5 leads mais recentes. Clicar num estado
+  filtra a lista. As mais recentes não mudam com os filtros.
 - Pesquisa por nome ou email.
 - Lista paginada, das mais recentes para as mais antigas, com a data de criação
   em formato relativo ("yesterday", "3 days ago").
 - Validação com uma mensagem de erro por baixo de cada campo.
 - Emails únicos. Um email repetido devolve um erro 409 com a mensagem no campo
   do email.
-- Notificações curtas depois de cada ação.
+- Notificações depois de cada ação.
 - Mensagens próprias para quando a lista está a carregar, quando há um erro,
   quando não existem leads e quando a pesquisa não encontra nada.
+- Layout adaptado a ecrãs pequenos: abaixo de 700px a barra lateral passa para
+  cima e a tabela faz scroll horizontal.
 
 ## Limitações
 
 - Não há testes automáticos. Testei a API à mão no Postman e a interface no
-  browser.
+  browser. 
 - A pesquisa ignora maiúsculas e minúsculas apenas em letras sem acentos, por
   causa da forma como o SQLite compara texto.
 - A pesquisa faz um pedido a cada letra escrita, sem debounce.
@@ -84,12 +84,6 @@ página nunca carrega todas as leads de uma vez. A ordenação é pela data de
 criação e depois pelo id, para que a ordem não mude entre páginas quando duas
 leads têm a mesma data.
 
-No frontend, o estado da página fica todo em page.js e os componentes recebem os
-dados por props. A lista, a paginação e os números da barra lateral dependem uns
-dos outros, por isso é mais simples tê-los num só sítio. O lado negativo é que o
-page.js ficou com cerca de 200 linhas. Se a aplicação crescesse, separava a
-lógica dos pedidos num hook próprio.
-
 Depois de criar, editar ou apagar uma lead, a página volta a pedir a lista ao
 servidor, em vez de a atualizar à mão. Custa um pedido extra, mas a ordem, os
 filtros e a paginação ficam sempre certos.
@@ -101,18 +95,13 @@ Os números de cada estado vêm de um endpoint próprio, /api/leads/stats, que o
 conta na base de dados. Não os calculo no browser porque a lista só traz as 10
 leads da página atual, já filtradas, e os totais ficariam errados. Assim, depois
 de criar, editar ou apagar uma lead, a página faz dois pedidos: um para a lista
-e
-outro para os números. Podia juntar os números à resposta da lista e fazer só um
+e outro para os números. Podia juntar os números à resposta da lista e fazer só um
 pedido, mas preferi que cada endpoint fizesse uma coisa só.
 
 O mesmo formulário serve para criar e editar. Enquanto está aberto, a pesquisa
 fica escondida, mas o filtro mantém-se, para não perder de vista a lead que se
 está a editar.
 
-Não utilizei nenhuma biblioteca de componentes. O estilo é feito com CSS Modules
-e algumas variáveis de cor em globals.css. Deu mais trabalho escrever à mão os
-estilos dos inputs, dos botões e da tabela, e o projeto ficou com menos
-dependências.
 
 ## Estrutura do projeto
 
@@ -180,9 +169,13 @@ como assistente de IA.
 ## Utilização de IA
 
 Utilizei o Claude como revisor e para me ajudar no debug. Explicou-me conceitos
-com que ainda não tinha trabalhado a fundo (Prisma e Zod). Também me mostrou
-como encapsular o tratamento de erros em lib/http.js.
+com que ainda não tinha trabalhado a fundo (Prisma e Zod) e mostrou-me como
+encapsular o tratamento de erros em lib/http.js.
 
-No frontend, ajudou-me a escrever o componente de paginação, a pensar na
-estrutura e no estilo do layout e a fazer a função de lib/date.js, que mostra a
-data de criação em formato relativo.
+Escrevi o backend: o modelo, os schemas, o service e as rotas. No frontend,
+recorri ao Claude para escrever o componente de paginação, para pensar na
+estrutura e no estilo do layout e para fazer a função de lib/date.js, que mostra
+a data de criação em formato relativo.
+
+Revi todo o código antes e testei cada passo no Postman e no
+browser já que o Next permite perceber melhor onde estão os erros.
