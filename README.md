@@ -184,6 +184,3 @@ como encapsular o tratamento de erros em lib/http.js.
 No frontend, ajudou-me a escrever o componente de paginação, a pensar na
 estrutura e no estilo do layout e a fazer a função de lib/date.js, que mostra a
 data de criação em formato relativo.
-
-Utilizei-o também para testar a instalação a partir de um clone limpo do
-repositório, seguindo os passos de Como correr localmente.
