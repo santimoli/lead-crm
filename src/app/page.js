@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import styles from "./page.module.css";
+
+const emptyForm = { name: "", email: "", company: "", status: "NEW" };
+
 export default function Home() {
 
     const [leads, setLeads] = useState([]);
@@ -9,17 +12,33 @@ export default function Home() {
     const [loading, setLoading] = useState(true);
 
 
-    const [form, setForm] = useState({ name: "", email: "", company: "" });
+    const [form, setForm] = useState(emptyForm);
     const [fieldErrors, setFieldErrors] = useState({});
+    const [editingId, setEditingId] = useState(null);
 
     function handleChange(e) {
         setForm({ ...form, [e.target.name]: e.target.value });
     }
 
+    function startEdit(lead) {
+        setForm({ name: lead.name, email: lead.email, company: lead.company, status: lead.status });
+        setEditingId(lead.id);
+        setFieldErrors({});
+    }
+
+    function cancelEdit() {
+        setForm(emptyForm);
+        setEditingId(null);
+        setFieldErrors({});
+    }
+
     function handleSubmit(e) {
         e.preventDefault();
-        fetch("/api/leads", {
-            method: "POST",
+        const url = editingId ? `/api/leads/${editingId}` : "/api/leads";
+        const method = editingId ? "PATCH" : "POST";
+
+        fetch(url, {
+            method,
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(form),
         }).then(async (response) => {
@@ -28,8 +47,7 @@ export default function Home() {
                 setFieldErrors(body.fields ?? {});
                 return;
             }
-            setForm({ name: "", email: "", company: "" });
-            setFieldErrors({});
+            cancelEdit();
             loadLeads();
         });
     }
@@ -42,6 +60,7 @@ export default function Home() {
 
     function loadLeads() {
         setLoading(true);
+        setError(null);
         fetch("/api/leads")
             .then((response) => {
                 if (!response.ok) throw new Error("Could not load leads");
@@ -70,7 +89,15 @@ export default function Home() {
               <input name="company" placeholder="Company" value={form.company} onChange={handleChange} />
               {fieldErrors.company && <p>{fieldErrors.company}</p>}
 
-              <button type="submit">Add lead</button>
+              <select name="status" value={form.status} onChange={handleChange}>
+                  <option value="NEW">New</option>
+                  <option value="CONTACTED">Contacted</option>
+                  <option value="QUALIFIED">Qualified</option>
+                  <option value="LOST">Lost</option>
+              </select>
+
+              <button type="submit">{editingId ? "Save" : "Add lead"}</button>
+              {editingId && <button type="button" onClick={cancelEdit}>Cancel</button>}
           </form>
             {loading && <p>Loading...</p>}
             {error && <p>Error: {error.message}</p>}
@@ -78,7 +105,8 @@ export default function Home() {
           <ul>
               {leads.map((lead) => (
                   <li key={lead.id}>
-                      {lead.name} - {lead.email}
+                      {lead.name} - {lead.email} ({lead.status})
+                      <button onClick={() => startEdit(lead)}>Edit</button>
                       <button onClick={() => handleDelete(lead.id)}>Delete</button>
                   </li>
               ))}
