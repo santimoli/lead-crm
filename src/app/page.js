@@ -33,17 +33,28 @@ export default function Home() {
             loadLeads();
         });
     }
+    function handleDelete(id) {
+        if (!confirm("Delete this lead?")) return;
+        fetch(`/api/leads/${id}`, { method: "DELETE" }).then((response) => {
+            if (response.ok) loadLeads();
+        });
+    }
 
-    useEffect(() => {
+    function loadLeads() {
+        setLoading(true);
         fetch("/api/leads")
-            .then((response)=> {
+            .then((response) => {
                 if (!response.ok) throw new Error("Could not load leads");
                 return response.json();
             })
-        .then((body) => {setLeads(body.data)})
-        .catch((err) => setError(err))
-        .finally(() => setLoading(false));
-    },[]);
+            .then((body) => setLeads(body.data))
+            .catch((err) => setError(err))
+            .finally(() => setLoading(false));
+    }
+
+    useEffect(() => {
+        loadLeads();
+    }, []);
 
     return (
     <div className={styles.page}>
@@ -68,6 +79,7 @@ export default function Home() {
               {leads.map((lead) => (
                   <li key={lead.id}>
                       {lead.name} - {lead.email}
+                      <button onClick={() => handleDelete(lead.id)}>Delete</button>
                   </li>
               ))}
           </ul>
