@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import styles from "./page.module.css";
 
 const emptyForm = { name: "", email: "", company: "", status: "NEW" };
+const pageSize = 5;
 
 export default function Home() {
 
@@ -17,6 +18,8 @@ export default function Home() {
     const [editingId, setEditingId] = useState(null);
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState("");
+    const [page, setPage] = useState(1);
+    const [total, setTotal] = useState(0);
 
     function handleChange(e) {
         setForm({ ...form, [e.target.name]: e.target.value });
@@ -63,20 +66,29 @@ export default function Home() {
     function loadLeads() {
         setLoading(true);
         setError(null);
-        const params = new URLSearchParams({ search, status: statusFilter });
+        const params = new URLSearchParams({ search, status: statusFilter, page, pageSize });
         fetch(`/api/leads?${params}`)
             .then((response) => {
                 if (!response.ok) throw new Error("Could not load leads");
                 return response.json();
             })
-            .then((body) => setLeads(body.data))
+            .then((body) => {
+                if (body.data.length === 0 && page > 1) {
+                    setPage(page - 1);
+                    return;
+                }
+                setLeads(body.data);
+                setTotal(body.meta.total);
+            })
             .catch((err) => setError(err))
             .finally(() => setLoading(false));
     }
 
     useEffect(() => {
         loadLeads();
-    }, [search, statusFilter]);
+    }, [search, statusFilter, page]);
+
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
     return (
     <div className={styles.page}>
@@ -107,9 +119,9 @@ export default function Home() {
               <input
                   placeholder="Search by name or email"
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               />
-              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+              <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}>
                   <option value="">All statuses</option>
                   <option value="NEW">New</option>
                   <option value="CONTACTED">Contacted</option>
@@ -130,6 +142,12 @@ export default function Home() {
                   </li>
               ))}
           </ul>
+
+          <div>
+              <button disabled={page === 1} onClick={() => setPage(page - 1)}>Previous</button>
+              <span> Page {page} of {totalPages} </span>
+              <button disabled={page >= totalPages} onClick={() => setPage(page + 1)}>Next</button>
+          </div>
       </main>
     </div>
   );
