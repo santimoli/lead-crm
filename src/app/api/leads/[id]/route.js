@@ -5,8 +5,7 @@ import { updateLeadSchema } from "@/features/leads/schema";
 
 export async function PATCH(request, context) {
   try {
-    const params = context.params;
-    const { id } = await params;
+    const { id } = await context.params;
     const data = updateLeadSchema.parse(await request.json());
     return NextResponse.json(await updateLead(id, data));
   } catch (error) {
@@ -16,8 +15,7 @@ export async function PATCH(request, context) {
 
 export async function DELETE(request, context) {
   try {
-    const params = context.params;
-    const { id } = await params;
+    const { id } = await context.params;
     await deleteLead(id);
     return new NextResponse(null, { status: 204 });
   } catch (error) {

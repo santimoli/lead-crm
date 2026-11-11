@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { ConflictError, NotFoundError } from "@/lib/errors";
-import { lead_status } from "@/features/leads/schema";
+import { leadStatuses } from "@/features/leads/status";
 
 const newFirst = [{ createdAt: "desc" }, { id: "desc" }];
 
-function ErrorsPrisma(error) {
+function handlePrismaError(error) {
   if (error.code === "P2002") {
     const message = "A lead with this email already exists";
     throw new ConflictError(message, { email: message });
@@ -14,7 +14,7 @@ function ErrorsPrisma(error) {
 }
 
 export async function listLeads({ search, status, page, pageSize }) {
-  const findLead = {
+  const where = {
     ...(status && { status }),
     ...(search && {
       OR: [{ name: { contains: search } }, { email: { contains: search } }],
@@ -22,27 +22,27 @@ export async function listLeads({ search, status, page, pageSize }) {
   };
   const [data, total] = await prisma.$transaction([
     prisma.lead.findMany({
-      where: findLead,
+      where,
       orderBy: newFirst,
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
-    prisma.lead.count({ where: findLead }),
+    prisma.lead.count({ where }),
   ]);
 
   return { data, meta: { total, page, pageSize } };
 }
 
 export function createLead(data) {
-  return prisma.lead.create({ data }).catch(ErrorsPrisma);
+  return prisma.lead.create({ data }).catch(handlePrismaError);
 }
 
 export function updateLead(id, data) {
-  return prisma.lead.update({ where: { id }, data }).catch(ErrorsPrisma);
+  return prisma.lead.update({ where: { id }, data }).catch(handlePrismaError);
 }
 
 export function deleteLead(id) {
-  return prisma.lead.delete({ where: { id } }).catch(ErrorsPrisma);
+  return prisma.lead.delete({ where: { id } }).catch(handlePrismaError);
 }
 
 export async function getLeadStats() {
@@ -52,7 +52,9 @@ export async function getLeadStats() {
     prisma.lead.findMany({ orderBy: newFirst, take: 5 }),
   ]);
 
-  const byStatus = Object.fromEntries(lead_status.map((status) => [status, 0]));
+  const byStatus = Object.fromEntries(
+    leadStatuses.map((status) => [status, 0]),
+  );
   for (const group of groups) {
     byStatus[group.status] = group._count.status;
   }

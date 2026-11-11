@@ -1,7 +1,7 @@
 import { z } from "zod";
-export const lead_status = ["NEW", "CONTACTED", "QUALIFIED", "LOST"];
+import { leadStatuses } from "@/features/leads/status";
 
-const status = z.enum(lead_status, "Invalid lead status");
+const status = z.enum(leadStatuses, "Invalid lead status");
 
 const fields = {
   name: z.string().trim().min(1, "Name is required"),
