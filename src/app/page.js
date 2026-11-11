@@ -8,6 +8,32 @@ export default function Home() {
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
 
+
+    const [form, setForm] = useState({ name: "", email: "", company: "" });
+    const [fieldErrors, setFieldErrors] = useState({});
+
+    function handleChange(e) {
+        setForm({ ...form, [e.target.name]: e.target.value });
+    }
+
+    function handleSubmit(e) {
+        e.preventDefault();
+        fetch("/api/leads", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(form),
+        }).then(async (response) => {
+            if (!response.ok) {
+                const body = await response.json();
+                setFieldErrors(body.fields ?? {});
+                return;
+            }
+            setForm({ name: "", email: "", company: "" });
+            setFieldErrors({});
+            loadLeads();
+        });
+    }
+
     useEffect(() => {
         fetch("/api/leads")
             .then((response)=> {
@@ -23,6 +49,18 @@ export default function Home() {
     <div className={styles.page}>
       <main>
           <h1>Leads</h1>
+          <form onSubmit={handleSubmit}>
+              <input name="name" placeholder="Name" value={form.name} onChange={handleChange} />
+              {fieldErrors.name && <p>{fieldErrors.name}</p>}
+
+              <input name="email" placeholder="Email" value={form.email} onChange={handleChange} />
+              {fieldErrors.email && <p>{fieldErrors.email}</p>}
+
+              <input name="company" placeholder="Company" value={form.company} onChange={handleChange} />
+              {fieldErrors.company && <p>{fieldErrors.company}</p>}
+
+              <button type="submit">Add lead</button>
+          </form>
             {loading && <p>Loading...</p>}
             {error && <p>Error: {error.message}</p>}
             {leads.length === 0 && !loading && !error && <p>No leads found</p>}
