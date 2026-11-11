@@ -15,6 +15,8 @@ export default function Home() {
     const [form, setForm] = useState(emptyForm);
     const [fieldErrors, setFieldErrors] = useState({});
     const [editingId, setEditingId] = useState(null);
+    const [search, setSearch] = useState("");
+    const [statusFilter, setStatusFilter] = useState("");
 
     function handleChange(e) {
         setForm({ ...form, [e.target.name]: e.target.value });
@@ -61,7 +63,8 @@ export default function Home() {
     function loadLeads() {
         setLoading(true);
         setError(null);
-        fetch("/api/leads")
+        const params = new URLSearchParams({ search, status: statusFilter });
+        fetch(`/api/leads?${params}`)
             .then((response) => {
                 if (!response.ok) throw new Error("Could not load leads");
                 return response.json();
@@ -73,7 +76,7 @@ export default function Home() {
 
     useEffect(() => {
         loadLeads();
-    }, []);
+    }, [search, statusFilter]);
 
     return (
     <div className={styles.page}>
@@ -99,6 +102,22 @@ export default function Home() {
               <button type="submit">{editingId ? "Save" : "Add lead"}</button>
               {editingId && <button type="button" onClick={cancelEdit}>Cancel</button>}
           </form>
+
+          <div>
+              <input
+                  placeholder="Search by name or email"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+              />
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                  <option value="">All statuses</option>
+                  <option value="NEW">New</option>
+                  <option value="CONTACTED">Contacted</option>
+                  <option value="QUALIFIED">Qualified</option>
+                  <option value="LOST">Lost</option>
+              </select>
+          </div>
+
             {loading && <p>Loading...</p>}
             {error && <p>Error: {error.message}</p>}
             {leads.length === 0 && !loading && !error && <p>No leads found</p>}
